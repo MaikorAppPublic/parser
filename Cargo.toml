@@ -1,0 +1,16 @@
+[package]
+name = "maikor-asm-parser"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ray Britton <raybritton@pm.me>"]
+description = "Maikor ASM parser"
+license = "MIT"
+repository = "https://github.com/MaikorAppPublic/parser"
+readme = "README.md"
+homepage = "https://maikor.app"
+
+[dependencies]
+thiserror = "1.0.31"
+maikor-language = "0.1.7"
+lazy_static = "1.4.0"
+regex = "1.5.5"
