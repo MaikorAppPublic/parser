@@ -144,9 +144,9 @@ pub fn to_args_str(list: &[Token]) -> String {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::Token::*;
     use maikor_language::op_params::{PRE_DEC, PRE_INC};
     use maikor_language::registers::offset;
-    use crate::Token::*;
 
     #[test]
     fn test_addresses() {
@@ -156,16 +156,22 @@ mod test {
 
     #[test]
     fn test_hex_addresses() {
-        assert_eq!(create_token("$x1",false).unwrap(), Address(1));
-        assert_eq!(create_token("$x4d2",false).unwrap(), Address(1234));
+        assert_eq!(create_token("$x1", false).unwrap(), Address(1));
+        assert_eq!(create_token("$x4d2", false).unwrap(), Address(1234));
     }
 
     #[test]
     fn test_registers() {
-        assert_eq!(create_token("AL",false).unwrap(), Register(offset::AL as u8));
-        assert_eq!(create_token("CL",false).unwrap(), Register(offset::CL as u8));
         assert_eq!(
-            create_token("-CL",false).unwrap(),
+            create_token("AL", false).unwrap(),
+            Register(offset::AL as u8)
+        );
+        assert_eq!(
+            create_token("CL", false).unwrap(),
+            Register(offset::CL as u8)
+        );
+        assert_eq!(
+            create_token("-CL", false).unwrap(),
             Register(offset::CL as u8 | PRE_DEC)
         );
     }
@@ -173,11 +179,11 @@ mod test {
     #[test]
     fn test_ext_registers() {
         assert_eq!(
-            create_token("+AX",false).unwrap(),
+            create_token("+AX", false).unwrap(),
             ExtRegister(offset::AX as u8 + PRE_INC)
         );
         assert_eq!(
-            create_token("BX",false).unwrap(),
+            create_token("BX", false).unwrap(),
             ExtRegister(offset::BX as u8)
         );
     }
@@ -210,8 +216,8 @@ mod test {
     fn test_hex_word() {
         assert_eq!(create_token("x100", true).unwrap(), Word(256));
         assert_eq!(create_token("x2f0d", true).unwrap(), Word(12045));
-        assert_eq!(create_token("x100",false).unwrap(), Word(256));
-        assert_eq!(create_token("x2f0d",false).unwrap(), Word(12045));
+        assert_eq!(create_token("x100", false).unwrap(), Word(256));
+        assert_eq!(create_token("x2f0d", false).unwrap(), Word(12045));
     }
 
     #[test]

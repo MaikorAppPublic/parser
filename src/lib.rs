@@ -1,14 +1,14 @@
 pub mod arg_matches;
+pub mod line;
 pub mod registers;
 pub mod tokens;
-pub mod line;
 
 use crate::arg_matches::get_op_code;
+use crate::line::parse_line;
 use crate::tokens::{to_args_str, Token};
 use crate::ParserError::{EmptyLine, General, Language};
 use maikor_language::LangError;
 use thiserror::Error;
-use crate::line::parse_line;
 
 #[derive(Error, Debug)]
 pub enum ParserError {
@@ -45,7 +45,7 @@ pub fn parse_lines(lines: &[&str]) -> Result<ParserOutput, ParserError> {
 
     for line in lines {
         let trimmed = line.trim();
-        if !trimmed.starts_with("#") && !trimmed.is_empty() {
+        if !trimmed.starts_with('#') && !trimmed.is_empty() {
             let (op, args) = parse_line(trimmed)?;
             op_count += 1;
             bytes.push(op);
@@ -53,28 +53,32 @@ pub fn parse_lines(lines: &[&str]) -> Result<ParserOutput, ParserError> {
         }
     }
 
-    return Ok(ParserOutput {
-        bytes,
-        op_count,
-    });
+    Ok(ParserOutput { bytes, op_count })
 }
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use maikor_language::ops::{CMP_REG_NUM_BYTE, INC_REG_BYTE, JE_ADDR};
     use maikor_language::registers::offset::AL;
-    use super::*;
 
     #[test]
     fn basic_test() {
-        let lines = vec![
-            "# test program",
-            "INC.B AL",
-            "CMP.B AL 1",
-            "JE $50"
-        ];
+        let lines = vec!["# test program", "INC.B AL", "CMP.B AL 1", "JE $50"];
         let output = parse_lines(&lines).unwrap();
         assert_eq!(output.op_count, 3);
-        assert_eq!(output.bytes, vec![INC_REG_BYTE, AL as u8, CMP_REG_NUM_BYTE, AL as u8, 1, JE_ADDR, 0, 50]);
+        assert_eq!(
+            output.bytes,
+            vec![
+                INC_REG_BYTE,
+                AL as u8,
+                CMP_REG_NUM_BYTE,
+                AL as u8,
+                1,
+                JE_ADDR,
+                0,
+                50
+            ]
+        );
     }
 }

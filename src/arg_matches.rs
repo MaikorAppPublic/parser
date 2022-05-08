@@ -15,7 +15,10 @@ pub fn get_op_code(op_name: &str, pattern: &str) -> Result<u8, ParserError> {
         } else {
             let options: Vec<&&str> = map.keys().collect();
             if pattern.is_empty() {
-                Err(General(format!("{} requires arguments, options are {:?}", op_name, options)))
+                Err(General(format!(
+                    "{} requires arguments, options are {:?}",
+                    op_name, options
+                )))
             } else {
                 Err(General(format!(
                     "No matching arg pattern '{}' for {}, options are {:?}",
@@ -24,7 +27,10 @@ pub fn get_op_code(op_name: &str, pattern: &str) -> Result<u8, ParserError> {
             }
         }
     } else {
-        Err(General(format!("No op found named '{}', maybe you're missing the size ('.B' or '.W')?", op_name)))
+        Err(General(format!(
+            "No op found named '{}', maybe you're missing the size ('.B' or '.W')?",
+            op_name
+        )))
     }
 }
 
@@ -372,14 +378,27 @@ fn make_map() -> HashMap<&'static str, HashMap<&'static str, u8>> {
             ("AR", JBS_ADDR_REG),
         ]),
     );
-    map.insert("CALL", HashMap::from([("E", CALL_REG),("I", CALL_REG), ("A", CALL_ADDR)]));
+    map.insert(
+        "CALL",
+        HashMap::from([("E", CALL_REG), ("I", CALL_REG), ("A", CALL_ADDR)]),
+    );
     map.insert(
         "SWAP.B",
-        HashMap::from([("II", SWAP_REG_REG_BYTE),("RI", SWAP_REG_REG_BYTE), ("IR", SWAP_REG_REG_BYTE),("RR", SWAP_REG_REG_BYTE)]),
+        HashMap::from([
+            ("II", SWAP_REG_REG_BYTE),
+            ("RI", SWAP_REG_REG_BYTE),
+            ("IR", SWAP_REG_REG_BYTE),
+            ("RR", SWAP_REG_REG_BYTE),
+        ]),
     );
     map.insert(
         "SWAP.W",
-        HashMap::from([("II", SWAP_REG_REG_WORD),("EI", SWAP_REG_REG_WORD),("IE", SWAP_REG_REG_WORD), ("EE", SWAP_REG_REG_WORD)]),
+        HashMap::from([
+            ("II", SWAP_REG_REG_WORD),
+            ("EI", SWAP_REG_REG_WORD),
+            ("IE", SWAP_REG_REG_WORD),
+            ("EE", SWAP_REG_REG_WORD),
+        ]),
     );
     map.insert(
         "MCPY",
@@ -617,12 +636,9 @@ mod test {
 
     fn check_arg_patterns(op_name: &str, matches: &HashMap<&str, u8>) {
         let mut patterns: Vec<String> = vec![];
-        for (key,code) in matches {
-            let id =format!("{}={:02X}", key, code);
-            assert!(
-                !patterns.contains(&id),
-                "{op_name} contains multiple {id}",
-            );
+        for (key, code) in matches {
+            let id = format!("{}={:02X}", key, code);
+            assert!(!patterns.contains(&id), "{op_name} contains multiple {id}",);
             patterns.push(id);
         }
     }
