@@ -1,5 +1,12 @@
 ## Pre-alpha
 
+### 0.1.1
+
+- Fix issue where size indicator (.B and .W) had to be capitalised)
+- Change register byte to use id instead of offset
+  - Update language dep 
+  - As language registers should be independent of VM implementation
+
 ### 0.1.0
 
 - Initial release

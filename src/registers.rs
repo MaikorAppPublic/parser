@@ -3,7 +3,7 @@ use crate::ParserError::{InvalidRegister, NotExtRegister};
 use maikor_language::op_params::RegisterPPID;
 use maikor_language::op_params::ID::*;
 use maikor_language::op_params::PP::*;
-use maikor_language::registers::{id, offset};
+use maikor_language::registers::id;
 
 pub fn parse_register(value: &str) -> Result<u8, ParserError> {
     let mut register = value.to_string();
@@ -41,7 +41,7 @@ pub fn parse_register(value: &str) -> Result<u8, ParserError> {
     if args.is_indirect && id::size(reg_id) != 2 {
         return Err(NotExtRegister(value.to_string()));
     }
-    let register = offset::from_id(reg_id as u8)?;
+    let register = reg_id as u8;
     let ppid_byte: u8 = args.into();
     Ok(register | ppid_byte)
 }
@@ -50,130 +50,118 @@ pub fn parse_register(value: &str) -> Result<u8, ParserError> {
 mod test {
     use crate::registers::parse_register;
     use maikor_language::op_params::{INDIRECT, POST_DEC, POST_INC, PRE_DEC, PRE_INC};
-    use maikor_language::registers::offset;
+    use maikor_language::registers::id;
 
     #[test]
     fn check_direct() {
-        assert_eq!(parse_register("AH").unwrap(), offset::AH as u8);
-        assert_eq!(parse_register("AL").unwrap(), offset::AL as u8);
-        assert_eq!(parse_register("BH").unwrap(), offset::BH as u8);
-        assert_eq!(parse_register("BL").unwrap(), offset::BL as u8);
-        assert_eq!(parse_register("CH").unwrap(), offset::CH as u8);
-        assert_eq!(parse_register("CL").unwrap(), offset::CL as u8);
-        assert_eq!(parse_register("DH").unwrap(), offset::DH as u8);
-        assert_eq!(parse_register("DL").unwrap(), offset::DL as u8);
-        assert_eq!(parse_register("AX").unwrap(), offset::AX as u8);
-        assert_eq!(parse_register("BX").unwrap(), offset::BX as u8);
-        assert_eq!(parse_register("CX").unwrap(), offset::CX as u8);
-        assert_eq!(parse_register("DX").unwrap(), offset::DX as u8);
-        assert_eq!(parse_register("FLG").unwrap(), offset::FLAGS as u8);
+        assert_eq!(parse_register("AH").unwrap(), id::AH as u8);
+        assert_eq!(parse_register("AL").unwrap(), id::AL as u8);
+        assert_eq!(parse_register("BH").unwrap(), id::BH as u8);
+        assert_eq!(parse_register("BL").unwrap(), id::BL as u8);
+        assert_eq!(parse_register("CH").unwrap(), id::CH as u8);
+        assert_eq!(parse_register("CL").unwrap(), id::CL as u8);
+        assert_eq!(parse_register("DH").unwrap(), id::DH as u8);
+        assert_eq!(parse_register("DL").unwrap(), id::DL as u8);
+        assert_eq!(parse_register("AX").unwrap(), id::AX as u8);
+        assert_eq!(parse_register("BX").unwrap(), id::BX as u8);
+        assert_eq!(parse_register("CX").unwrap(), id::CX as u8);
+        assert_eq!(parse_register("DX").unwrap(), id::DX as u8);
+        assert_eq!(parse_register("FLG").unwrap(), id::FLAGS as u8);
     }
 
     #[test]
     fn check_indirect() {
-        assert_eq!(parse_register("(AX)").unwrap(), offset::AX as u8 | INDIRECT);
-        assert_eq!(parse_register("(BX)").unwrap(), offset::BX as u8 | INDIRECT);
-        assert_eq!(parse_register("(CX)").unwrap(), offset::CX as u8 | INDIRECT);
-        assert_eq!(parse_register("(DX)").unwrap(), offset::DX as u8 | INDIRECT);
+        assert_eq!(parse_register("(AX)").unwrap(), id::AX as u8 | INDIRECT);
+        assert_eq!(parse_register("(BX)").unwrap(), id::BX as u8 | INDIRECT);
+        assert_eq!(parse_register("(CX)").unwrap(), id::CX as u8 | INDIRECT);
+        assert_eq!(parse_register("(DX)").unwrap(), id::DX as u8 | INDIRECT);
     }
 
     #[test]
     fn check_direct_pre_inc() {
-        assert_eq!(parse_register("+AH").unwrap(), offset::AH as u8 | PRE_INC);
-        assert_eq!(parse_register("+AL").unwrap(), offset::AL as u8 | PRE_INC);
-        assert_eq!(parse_register("+BH").unwrap(), offset::BH as u8 | PRE_INC);
-        assert_eq!(parse_register("+BL").unwrap(), offset::BL as u8 | PRE_INC);
-        assert_eq!(parse_register("+CH").unwrap(), offset::CH as u8 | PRE_INC);
-        assert_eq!(parse_register("+CL").unwrap(), offset::CL as u8 | PRE_INC);
-        assert_eq!(parse_register("+DH").unwrap(), offset::DH as u8 | PRE_INC);
-        assert_eq!(parse_register("+DL").unwrap(), offset::DL as u8 | PRE_INC);
-        assert_eq!(parse_register("+AX").unwrap(), offset::AX as u8 | PRE_INC);
-        assert_eq!(parse_register("+BX").unwrap(), offset::BX as u8 | PRE_INC);
-        assert_eq!(parse_register("+CX").unwrap(), offset::CX as u8 | PRE_INC);
-        assert_eq!(parse_register("+DX").unwrap(), offset::DX as u8 | PRE_INC);
-        assert_eq!(
-            parse_register("+FLG").unwrap(),
-            offset::FLAGS as u8 | PRE_INC
-        );
+        assert_eq!(parse_register("+AH").unwrap(), id::AH as u8 | PRE_INC);
+        assert_eq!(parse_register("+AL").unwrap(), id::AL as u8 | PRE_INC);
+        assert_eq!(parse_register("+BH").unwrap(), id::BH as u8 | PRE_INC);
+        assert_eq!(parse_register("+BL").unwrap(), id::BL as u8 | PRE_INC);
+        assert_eq!(parse_register("+CH").unwrap(), id::CH as u8 | PRE_INC);
+        assert_eq!(parse_register("+CL").unwrap(), id::CL as u8 | PRE_INC);
+        assert_eq!(parse_register("+DH").unwrap(), id::DH as u8 | PRE_INC);
+        assert_eq!(parse_register("+DL").unwrap(), id::DL as u8 | PRE_INC);
+        assert_eq!(parse_register("+AX").unwrap(), id::AX as u8 | PRE_INC);
+        assert_eq!(parse_register("+BX").unwrap(), id::BX as u8 | PRE_INC);
+        assert_eq!(parse_register("+CX").unwrap(), id::CX as u8 | PRE_INC);
+        assert_eq!(parse_register("+DX").unwrap(), id::DX as u8 | PRE_INC);
+        assert_eq!(parse_register("+FLG").unwrap(), id::FLAGS as u8 | PRE_INC);
     }
 
     #[test]
     fn check_direct_pre_dec() {
-        assert_eq!(parse_register("-AH").unwrap(), offset::AH as u8 | PRE_DEC);
-        assert_eq!(parse_register("-AL").unwrap(), offset::AL as u8 | PRE_DEC);
-        assert_eq!(parse_register("-BH").unwrap(), offset::BH as u8 | PRE_DEC);
-        assert_eq!(parse_register("-BL").unwrap(), offset::BL as u8 | PRE_DEC);
-        assert_eq!(parse_register("-CH").unwrap(), offset::CH as u8 | PRE_DEC);
-        assert_eq!(parse_register("-CL").unwrap(), offset::CL as u8 | PRE_DEC);
-        assert_eq!(parse_register("-DH").unwrap(), offset::DH as u8 | PRE_DEC);
-        assert_eq!(parse_register("-DL").unwrap(), offset::DL as u8 | PRE_DEC);
-        assert_eq!(parse_register("-AX").unwrap(), offset::AX as u8 | PRE_DEC);
-        assert_eq!(parse_register("-BX").unwrap(), offset::BX as u8 | PRE_DEC);
-        assert_eq!(parse_register("-CX").unwrap(), offset::CX as u8 | PRE_DEC);
-        assert_eq!(parse_register("-DX").unwrap(), offset::DX as u8 | PRE_DEC);
-        assert_eq!(
-            parse_register("-FLG").unwrap(),
-            offset::FLAGS as u8 | PRE_DEC
-        );
+        assert_eq!(parse_register("-AH").unwrap(), id::AH as u8 | PRE_DEC);
+        assert_eq!(parse_register("-AL").unwrap(), id::AL as u8 | PRE_DEC);
+        assert_eq!(parse_register("-BH").unwrap(), id::BH as u8 | PRE_DEC);
+        assert_eq!(parse_register("-BL").unwrap(), id::BL as u8 | PRE_DEC);
+        assert_eq!(parse_register("-CH").unwrap(), id::CH as u8 | PRE_DEC);
+        assert_eq!(parse_register("-CL").unwrap(), id::CL as u8 | PRE_DEC);
+        assert_eq!(parse_register("-DH").unwrap(), id::DH as u8 | PRE_DEC);
+        assert_eq!(parse_register("-DL").unwrap(), id::DL as u8 | PRE_DEC);
+        assert_eq!(parse_register("-AX").unwrap(), id::AX as u8 | PRE_DEC);
+        assert_eq!(parse_register("-BX").unwrap(), id::BX as u8 | PRE_DEC);
+        assert_eq!(parse_register("-CX").unwrap(), id::CX as u8 | PRE_DEC);
+        assert_eq!(parse_register("-DX").unwrap(), id::DX as u8 | PRE_DEC);
+        assert_eq!(parse_register("-FLG").unwrap(), id::FLAGS as u8 | PRE_DEC);
     }
 
     #[test]
     fn check_direct_post_inc() {
-        assert_eq!(parse_register("AH+").unwrap(), offset::AH as u8 | POST_INC);
-        assert_eq!(parse_register("AL+").unwrap(), offset::AL as u8 | POST_INC);
-        assert_eq!(parse_register("BH+").unwrap(), offset::BH as u8 | POST_INC);
-        assert_eq!(parse_register("BL+").unwrap(), offset::BL as u8 | POST_INC);
-        assert_eq!(parse_register("CH+").unwrap(), offset::CH as u8 | POST_INC);
-        assert_eq!(parse_register("CL+").unwrap(), offset::CL as u8 | POST_INC);
-        assert_eq!(parse_register("DH+").unwrap(), offset::DH as u8 | POST_INC);
-        assert_eq!(parse_register("DL+").unwrap(), offset::DL as u8 | POST_INC);
-        assert_eq!(parse_register("AX+").unwrap(), offset::AX as u8 | POST_INC);
-        assert_eq!(parse_register("BX+").unwrap(), offset::BX as u8 | POST_INC);
-        assert_eq!(parse_register("CX+").unwrap(), offset::CX as u8 | POST_INC);
-        assert_eq!(parse_register("DX+").unwrap(), offset::DX as u8 | POST_INC);
-        assert_eq!(
-            parse_register("FLG+").unwrap(),
-            offset::FLAGS as u8 | POST_INC
-        );
+        assert_eq!(parse_register("AH+").unwrap(), id::AH as u8 | POST_INC);
+        assert_eq!(parse_register("AL+").unwrap(), id::AL as u8 | POST_INC);
+        assert_eq!(parse_register("BH+").unwrap(), id::BH as u8 | POST_INC);
+        assert_eq!(parse_register("BL+").unwrap(), id::BL as u8 | POST_INC);
+        assert_eq!(parse_register("CH+").unwrap(), id::CH as u8 | POST_INC);
+        assert_eq!(parse_register("CL+").unwrap(), id::CL as u8 | POST_INC);
+        assert_eq!(parse_register("DH+").unwrap(), id::DH as u8 | POST_INC);
+        assert_eq!(parse_register("DL+").unwrap(), id::DL as u8 | POST_INC);
+        assert_eq!(parse_register("AX+").unwrap(), id::AX as u8 | POST_INC);
+        assert_eq!(parse_register("BX+").unwrap(), id::BX as u8 | POST_INC);
+        assert_eq!(parse_register("CX+").unwrap(), id::CX as u8 | POST_INC);
+        assert_eq!(parse_register("DX+").unwrap(), id::DX as u8 | POST_INC);
+        assert_eq!(parse_register("FLG+").unwrap(), id::FLAGS as u8 | POST_INC);
     }
 
     #[test]
     fn check_direct_post_dec() {
-        assert_eq!(parse_register("AH-").unwrap(), offset::AH as u8 | POST_DEC);
-        assert_eq!(parse_register("AL-").unwrap(), offset::AL as u8 | POST_DEC);
-        assert_eq!(parse_register("BH-").unwrap(), offset::BH as u8 | POST_DEC);
-        assert_eq!(parse_register("BL-").unwrap(), offset::BL as u8 | POST_DEC);
-        assert_eq!(parse_register("CH-").unwrap(), offset::CH as u8 | POST_DEC);
-        assert_eq!(parse_register("CL-").unwrap(), offset::CL as u8 | POST_DEC);
-        assert_eq!(parse_register("DH-").unwrap(), offset::DH as u8 | POST_DEC);
-        assert_eq!(parse_register("DL-").unwrap(), offset::DL as u8 | POST_DEC);
-        assert_eq!(parse_register("AX-").unwrap(), offset::AX as u8 | POST_DEC);
-        assert_eq!(parse_register("BX-").unwrap(), offset::BX as u8 | POST_DEC);
-        assert_eq!(parse_register("CX-").unwrap(), offset::CX as u8 | POST_DEC);
-        assert_eq!(parse_register("DX-").unwrap(), offset::DX as u8 | POST_DEC);
-        assert_eq!(
-            parse_register("FLG-").unwrap(),
-            offset::FLAGS as u8 | POST_DEC
-        );
+        assert_eq!(parse_register("AH-").unwrap(), id::AH as u8 | POST_DEC);
+        assert_eq!(parse_register("AL-").unwrap(), id::AL as u8 | POST_DEC);
+        assert_eq!(parse_register("BH-").unwrap(), id::BH as u8 | POST_DEC);
+        assert_eq!(parse_register("BL-").unwrap(), id::BL as u8 | POST_DEC);
+        assert_eq!(parse_register("CH-").unwrap(), id::CH as u8 | POST_DEC);
+        assert_eq!(parse_register("CL-").unwrap(), id::CL as u8 | POST_DEC);
+        assert_eq!(parse_register("DH-").unwrap(), id::DH as u8 | POST_DEC);
+        assert_eq!(parse_register("DL-").unwrap(), id::DL as u8 | POST_DEC);
+        assert_eq!(parse_register("AX-").unwrap(), id::AX as u8 | POST_DEC);
+        assert_eq!(parse_register("BX-").unwrap(), id::BX as u8 | POST_DEC);
+        assert_eq!(parse_register("CX-").unwrap(), id::CX as u8 | POST_DEC);
+        assert_eq!(parse_register("DX-").unwrap(), id::DX as u8 | POST_DEC);
+        assert_eq!(parse_register("FLG-").unwrap(), id::FLAGS as u8 | POST_DEC);
     }
 
     #[test]
     fn check_indirect_pre_inc() {
         assert_eq!(
             parse_register("-(AX)").unwrap(),
-            offset::AX as u8 | INDIRECT | PRE_DEC
+            id::AX as u8 | INDIRECT | PRE_DEC
         );
         assert_eq!(
             parse_register("-(BX)").unwrap(),
-            offset::BX as u8 | INDIRECT | PRE_DEC
+            id::BX as u8 | INDIRECT | PRE_DEC
         );
         assert_eq!(
             parse_register("-(CX)").unwrap(),
-            offset::CX as u8 | INDIRECT | PRE_DEC
+            id::CX as u8 | INDIRECT | PRE_DEC
         );
         assert_eq!(
             parse_register("-(DX)").unwrap(),
-            offset::DX as u8 | INDIRECT | PRE_DEC
+            id::DX as u8 | INDIRECT | PRE_DEC
         );
     }
 
@@ -181,19 +169,19 @@ mod test {
     fn check_indirect_post_inc() {
         assert_eq!(
             parse_register("(AX)+").unwrap(),
-            offset::AX as u8 | INDIRECT | POST_INC
+            id::AX as u8 | INDIRECT | POST_INC
         );
         assert_eq!(
             parse_register("(BX)+").unwrap(),
-            offset::BX as u8 | INDIRECT | POST_INC
+            id::BX as u8 | INDIRECT | POST_INC
         );
         assert_eq!(
             parse_register("(CX)+").unwrap(),
-            offset::CX as u8 | INDIRECT | POST_INC
+            id::CX as u8 | INDIRECT | POST_INC
         );
         assert_eq!(
             parse_register("(DX)+").unwrap(),
-            offset::DX as u8 | INDIRECT | POST_INC
+            id::DX as u8 | INDIRECT | POST_INC
         );
     }
 
@@ -201,19 +189,19 @@ mod test {
     fn check_indirect_pre_dec() {
         assert_eq!(
             parse_register("-(AX)").unwrap(),
-            offset::AX as u8 | INDIRECT | PRE_DEC
+            id::AX as u8 | INDIRECT | PRE_DEC
         );
         assert_eq!(
             parse_register("-(BX)").unwrap(),
-            offset::BX as u8 | INDIRECT | PRE_DEC
+            id::BX as u8 | INDIRECT | PRE_DEC
         );
         assert_eq!(
             parse_register("-(CX)").unwrap(),
-            offset::CX as u8 | INDIRECT | PRE_DEC
+            id::CX as u8 | INDIRECT | PRE_DEC
         );
         assert_eq!(
             parse_register("-(DX)").unwrap(),
-            offset::DX as u8 | INDIRECT | PRE_DEC
+            id::DX as u8 | INDIRECT | PRE_DEC
         );
     }
 
@@ -221,19 +209,19 @@ mod test {
     fn check_indirect_post_dec() {
         assert_eq!(
             parse_register("(AX)-").unwrap(),
-            offset::AX as u8 | INDIRECT | POST_DEC
+            id::AX as u8 | INDIRECT | POST_DEC
         );
         assert_eq!(
             parse_register("(BX)-").unwrap(),
-            offset::BX as u8 | INDIRECT | POST_DEC
+            id::BX as u8 | INDIRECT | POST_DEC
         );
         assert_eq!(
             parse_register("(CX)-").unwrap(),
-            offset::CX as u8 | INDIRECT | POST_DEC
+            id::CX as u8 | INDIRECT | POST_DEC
         );
         assert_eq!(
             parse_register("(DX)-").unwrap(),
-            offset::DX as u8 | INDIRECT | POST_DEC
+            id::DX as u8 | INDIRECT | POST_DEC
         );
     }
 

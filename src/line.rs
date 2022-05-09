@@ -9,8 +9,9 @@ pub fn parse_line(line: &str) -> Result<(u8, Vec<u8>), ParserError> {
     if parts.is_empty() {
         return Err(EmptyLine);
     }
+    let command = parts[0].to_ascii_uppercase();
     //find a better solution for this
-    let promote_bytes = parts[0].to_ascii_uppercase().ends_with('W');
+    let promote_bytes = command.ends_with('W');
     let args = if parts.len() > 1 {
         parse_args(&parts[1..], promote_bytes)?
     } else {
@@ -19,7 +20,7 @@ pub fn parse_line(line: &str) -> Result<(u8, Vec<u8>), ParserError> {
 
     let bytes = args.iter().flat_map(Vec::<u8>::from).collect();
     let pattern = &to_args_str(&args);
-    let op = get_op_code(parts[0], pattern)?;
+    let op = get_op_code(&command, pattern)?;
     Ok((op, bytes))
 }
 
@@ -39,8 +40,7 @@ mod test {
         INDIRECT, IND_POST_DEC, IND_POST_INC, IND_PRE_DEC, POST_INC, PRE_DEC, PRE_INC,
     };
     use maikor_language::ops::*;
-    use maikor_language::registers::offset;
-    use offset::*;
+    use maikor_language::registers::id::*;
 
     fn assert_op(line: &str, expected_op: u8, expected_args: Vec<u8>) {
         let (op, args) = parse_line(line).unwrap();
@@ -55,8 +55,22 @@ mod test {
     }
 
     #[test]
+    fn check_capitals() {
+        assert_op("INC.B AL", INC_REG_BYTE, vec![AL as u8]);
+        assert_op("inc.b al", INC_REG_BYTE, vec![AL as u8]);
+        assert_op("inc.B al", INC_REG_BYTE, vec![AL as u8]);
+        assert_op("INC.b al", INC_REG_BYTE, vec![AL as u8]);
+        assert_op("INC.B al", INC_REG_BYTE, vec![AL as u8]);
+        assert_op("INC.B aL", INC_REG_BYTE, vec![AL as u8]);
+        assert_op("INC.B (AX)", INC_REG_BYTE, vec![AX as u8 | INDIRECT]);
+        assert_op("INC.B (ax)", INC_REG_BYTE, vec![AX as u8 | INDIRECT]);
+        assert_op("INC.B (Ax)", INC_REG_BYTE, vec![AX as u8 | INDIRECT]);
+        assert_op("Inc.B (Ax)", INC_REG_BYTE, vec![AX as u8 | INDIRECT]);
+    }
+
+    #[test]
     fn test_basic_parsing() {
-        assert_op("INC.B   AL", INC_REG_BYTE, vec![AL as u8]);
+        assert_op("INC.B AL", INC_REG_BYTE, vec![AL as u8]);
         assert_op("INC.W AX", INC_REG_WORD, vec![AX as u8]);
         assert_op("INC.B (BX)", INC_REG_BYTE, vec![BX as u8 | INDIRECT]);
         assert_op("INC.W (AX)", INC_REG_WORD, vec![AX as u8 | INDIRECT]);

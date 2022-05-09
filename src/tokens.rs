@@ -146,7 +146,7 @@ mod test {
     use super::*;
     use crate::Token::*;
     use maikor_language::op_params::{PRE_DEC, PRE_INC};
-    use maikor_language::registers::offset;
+    use maikor_language::registers::id::*;
 
     #[test]
     fn test_addresses() {
@@ -162,17 +162,11 @@ mod test {
 
     #[test]
     fn test_registers() {
-        assert_eq!(
-            create_token("AL", false).unwrap(),
-            Register(offset::AL as u8)
-        );
-        assert_eq!(
-            create_token("CL", false).unwrap(),
-            Register(offset::CL as u8)
-        );
+        assert_eq!(create_token("AL", false).unwrap(), Register(AL as u8));
+        assert_eq!(create_token("CL", false).unwrap(), Register(CL as u8));
         assert_eq!(
             create_token("-CL", false).unwrap(),
-            Register(offset::CL as u8 | PRE_DEC)
+            Register(CL as u8 | PRE_DEC)
         );
     }
 
@@ -180,12 +174,9 @@ mod test {
     fn test_ext_registers() {
         assert_eq!(
             create_token("+AX", false).unwrap(),
-            ExtRegister(offset::AX as u8 + PRE_INC)
+            ExtRegister(AX as u8 + PRE_INC)
         );
-        assert_eq!(
-            create_token("BX", false).unwrap(),
-            ExtRegister(offset::BX as u8)
-        );
+        assert_eq!(create_token("BX", false).unwrap(), ExtRegister(BX as u8));
     }
 
     #[test]

@@ -60,7 +60,7 @@ pub fn parse_lines(lines: &[&str]) -> Result<ParserOutput, ParserError> {
 mod test {
     use super::*;
     use maikor_language::ops::{CMP_REG_NUM_BYTE, INC_REG_BYTE, JE_ADDR};
-    use maikor_language::registers::offset::AL;
+    use maikor_language::registers::id::AL;
 
     #[test]
     fn basic_test() {
