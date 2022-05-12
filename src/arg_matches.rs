@@ -38,6 +38,7 @@ fn make_map() -> HashMap<&'static str, HashMap<&'static str, u8>> {
     let mut map = HashMap::new();
     map.insert("NOP", no_args(NOP));
     map.insert("HALT", no_args(HALT));
+    map.insert("SLEEP", no_args(SLEEP));
     map.insert(
         "CPY.B",
         make_math_args_map_b(
@@ -166,7 +167,7 @@ fn make_map() -> HashMap<&'static str, HashMap<&'static str, u8>> {
     );
     map.insert(
         "MUL.B",
-        make_math_args_map_b(
+        make_mul_args_map_b(
             MUL_REG_REG_BYTE,
             MUL_ADDR_REG_BYTE,
             MUL_REG_NUM_BYTE,
@@ -210,7 +211,7 @@ fn make_map() -> HashMap<&'static str, HashMap<&'static str, u8>> {
     );
     map.insert(
         "MULS.B",
-        make_math_args_map_b(
+        make_mul_args_map_b(
             MULS_REG_REG_BYTE,
             MULS_ADDR_REG_BYTE,
             MULS_REG_NUM_BYTE,
@@ -559,6 +560,30 @@ fn make_math_args_map_b(
         ("AB", an),
         ("RR", rr),
         ("RI", rr),
+        ("IR", rr),
+        ("II", rr),
+        ("AA", aa),
+    ])
+}
+
+fn make_mul_args_map_b(
+    rr: u8,
+    ar: u8,
+    rn: u8,
+    an: u8,
+    ra: u8,
+    aa: u8,
+) -> HashMap<&'static str, u8> {
+    HashMap::from([
+        ("IB", rn),
+        ("EB", rn),
+        ("IA", ra),
+        ("EA", ra),
+        ("AI", ar),
+        ("AR", ar),
+        ("AB", an),
+        ("ER", rr),
+        ("EI", rr),
         ("IR", rr),
         ("II", rr),
         ("AA", aa),

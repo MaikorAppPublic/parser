@@ -1,5 +1,12 @@
 ## Pre-alpha
 
+### 0.1.2
+
+- *BREAKING CHANGE*
+- Fix MUL and MULS parsing
+- Update dependencies
+  - Language to 0.1.11 
+
 ### 0.1.1
 
 - Fix issue where size indicator (.B and .W) had to be capitalised)

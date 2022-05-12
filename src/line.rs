@@ -267,10 +267,141 @@ mod test {
         // this test relies on op code ordering matching for ADD, SUB, etc
         check_math_ops("ADD", ADD_REG_REG_BYTE, ADD_REG_REG_WORD);
         check_math_ops("SUB", SUB_REG_REG_BYTE, SUB_REG_REG_WORD);
-        check_math_ops("MUL", MUL_REG_REG_BYTE, MUL_REG_REG_WORD);
         check_math_ops("DIV", DIV_REG_REG_BYTE, DIV_REG_REG_WORD);
-        check_math_ops("MULS", MULS_REG_REG_BYTE, MULS_REG_REG_WORD);
         check_math_ops("DIVS", DIVS_REG_REG_BYTE, DIVS_REG_REG_WORD);
+    }
+
+    #[test]
+    fn test_every_mul() {
+        let list = [
+            ("MUL", MUL_REG_REG_BYTE, MUL_REG_REG_WORD),
+            ("MULS", MULS_REG_REG_BYTE, MULS_REG_REG_WORD),
+        ];
+        for (command, byte_start, word_start) in list {
+            // IR, RR, RI, II, IB, RB, IA, RA, AR, AI, AB, AA
+            assert_op(
+                &format!("{command}.B (AX) CL"),
+                byte_start,
+                vec![AX as u8 | INDIRECT, CL as u8],
+            );
+            assert_op(
+                &format!("{command}.B BX CH"),
+                byte_start,
+                vec![BX as u8, CH as u8],
+            );
+            assert_op(
+                &format!("{command}.B BX (DX)"),
+                byte_start,
+                vec![BX as u8, DX as u8 | INDIRECT],
+            );
+            assert_op(
+                &format!("{command}.B (BX) (DX)+"),
+                byte_start,
+                vec![BX as u8 | INDIRECT, DX as u8 | IND_POST_INC],
+            );
+            assert_op(
+                &format!("{command}.B (CX) 25"),
+                byte_start + 2,
+                vec![CX as u8 | INDIRECT, 25],
+            );
+            assert_op(
+                &format!("{command}.B -AX 60"),
+                byte_start + 2,
+                vec![AX as u8 | PRE_DEC, 60],
+            );
+            assert_op(
+                &format!("{command}.B (AX) $10"),
+                byte_start + 4,
+                vec![AX as u8 | INDIRECT, 0, 10],
+            );
+            assert_op(
+                &format!("{command}.B CX $x40"),
+                byte_start + 4,
+                vec![CX as u8, 0, 64],
+            );
+            assert_op(
+                &format!("{command}.B $256 DL"),
+                byte_start + 6,
+                vec![1, 0, DL as u8],
+            );
+            assert_op(
+                &format!("{command}.B $x1010 (BX)"),
+                byte_start + 6,
+                vec![16, 16, BX as u8 | INDIRECT],
+            );
+            assert_op(
+                &format!("{command}.B $65535 10"),
+                byte_start + 8,
+                vec![255, 255, 10],
+            );
+            assert_op(
+                &format!("{command}.B $56 $x1"),
+                byte_start + 10,
+                vec![0, 56, 0, 1],
+            );
+
+            // IE, EE, EI, II, IW, EW, IA, EA, AE, AI, AW, AA
+            assert_op(
+                &format!("{command}.W (AX) CX"),
+                word_start,
+                vec![AX as u8 | INDIRECT, CX as u8],
+            );
+            assert_op(
+                &format!("{command}.W BX -DX"),
+                word_start,
+                vec![BX as u8, DX as u8 | PRE_DEC],
+            );
+            assert_op(
+                &format!("{command}.W AX (CX)+"),
+                word_start,
+                vec![AX as u8, CX as u8 | IND_POST_INC],
+            );
+            assert_op(
+                &format!("{command}.W (BX) (DX)"),
+                word_start,
+                vec![BX as u8 | INDIRECT, DX as u8 | INDIRECT],
+            );
+            assert_op(
+                &format!("{command}.W (AX) 1200"),
+                word_start + 2,
+                vec![AX as u8 | INDIRECT, 4, 176],
+            );
+            assert_op(
+                &format!("{command}.W DX 89"),
+                word_start + 2,
+                vec![DX as u8, 0, 89],
+            );
+            assert_op(
+                &format!("{command}.W (BX) $10"),
+                word_start + 4,
+                vec![BX as u8 | INDIRECT, 0, 10],
+            );
+            assert_op(
+                &format!("{command}.W BX $10"),
+                word_start + 4,
+                vec![BX as u8, 0, 10],
+            );
+            assert_op(
+                &format!("{command}.W $800 BX"),
+                word_start + 6,
+                vec![3, 32, BX as u8],
+            );
+            assert_op(
+                &format!("{command}.W $799 (AX)"),
+                word_start + 6,
+                vec![3, 31, AX as u8 | INDIRECT],
+            );
+            assert_op(
+                &format!("{command}.W $51 567"),
+                word_start + 8,
+                vec![0, 51, 2, 55],
+            );
+            assert_op(
+                &format!("{command}.W $100 $102"),
+                word_start + 10,
+                vec![0, 100, 0, 102],
+            );
+        }
     }
 
     fn check_math_ops(command: &str, byte_start: u8, word_start: u8) {
