@@ -62,7 +62,7 @@ impl ParseError {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Line {
     pub num: usize,
     pub original: String,
@@ -81,11 +81,13 @@ impl Line {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Program {
     lines: Vec<ParsedLine>,
     bytes: Vec<u8>,
 }
 
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct ParsedLine {
     pub line: Line,
     pub bytes: Vec<u8>,
@@ -136,8 +138,35 @@ pub fn parse_line_from_str(text: &str) -> Result<ParsedLine, ParseError> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use maikor_platform::ops::{CMP_REG_NUM_BYTE, INC_REG_BYTE, JE_ADDR};
+    use maikor_platform::ops::{ADD_REG_NUM_BYTE, CMP_REG_NUM_BYTE, INC_REG_BYTE, INC_REG_WORD, JE_ADDR};
+    use maikor_platform::registers::id;
     use maikor_platform::registers::id::AL;
+
+    #[test]
+    fn line_test() {
+        assert_eq!(parse_line_from_str("inc.w bx").unwrap(),
+                   ParsedLine {
+                       line: Line {
+                           num: 0,
+                           original: "inc.w bx".to_string(),
+                           label: None,
+                           command: Some(("inc.w".to_string(), vec!["bx".to_string()])),
+                       },
+                       bytes: vec![INC_REG_WORD, id::BX as u8],
+                   });
+        assert_eq!(parse_line_from_str("add.b al, 30").unwrap(),
+                   ParsedLine {
+                       line: Line {
+                           num: 0,
+                           original: "add.b al, 30".to_string(),
+                           label: None,
+                           command: Some(("add.b".to_string(), vec!["al".to_string(), "30".to_string()])),
+                       },
+                       bytes: vec![ADD_REG_NUM_BYTE, id::AL as u8, 30],
+                   });
+
+        assert!(parse_line_from_str("inc al").is_err());
+    }
 
     #[test]
     fn basic_test() {
@@ -154,7 +183,7 @@ mod test {
                 1,
                 JE_ADDR,
                 0,
-                50
+                50,
             ]
         );
     }
