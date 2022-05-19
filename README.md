@@ -29,3 +29,10 @@ See more at [maikor.app](https://maikor.app) and the [project homepage](https://
 ## parser
 
 Converts Maikor ASM into bytes that can be executed on the VM
+
+**TODO**
+
+Add support for 
+ - labels
+ - constants
+ - data table

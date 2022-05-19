@@ -1,6 +1,5 @@
-use crate::{General, ParserError};
 use lazy_static::lazy_static;
-use maikor_language::ops::*;
+use maikor_platform::ops::*;
 use std::collections::HashMap;
 
 lazy_static! {
@@ -8,36 +7,11 @@ lazy_static! {
     pub static ref ARG_MATCHES: HashMap<&'static str, HashMap<&'static str, u8>> = make_map();
 }
 
-pub fn get_op_code(op_name: &str, pattern: &str) -> Result<u8, ParserError> {
-    if let Some(map) = ARG_MATCHES.get(op_name) {
-        if let Some(op_code) = map.get(pattern) {
-            Ok(*op_code)
-        } else {
-            let options: Vec<&&str> = map.keys().collect();
-            if pattern.is_empty() {
-                Err(General(format!(
-                    "{} requires arguments, options are {:?}",
-                    op_name, options
-                )))
-            } else {
-                Err(General(format!(
-                    "No matching arg pattern '{}' for {}, options are {:?}",
-                    pattern, op_name, options
-                )))
-            }
-        }
-    } else {
-        Err(General(format!(
-            "No op found named '{}', maybe you're missing the size ('.B' or '.W')?",
-            op_name
-        )))
-    }
-}
-
 fn make_map() -> HashMap<&'static str, HashMap<&'static str, u8>> {
     let mut map = HashMap::new();
     map.insert("NOP", no_args(NOP));
     map.insert("HALT", no_args(HALT));
+    map.insert("EHALT", no_args(EHALT));
     map.insert("SLEEP", no_args(SLEEP));
     map.insert(
         "CPY.B",
@@ -384,6 +358,16 @@ fn make_map() -> HashMap<&'static str, HashMap<&'static str, u8>> {
         HashMap::from([("E", CALL_REG), ("I", CALL_REG), ("A", CALL_ADDR)]),
     );
     map.insert(
+        "PUSH.B",
+        HashMap::from([("R", PUSH_REG_BYTE), ("B", PUSH_NUM_BYTE)]),
+    );
+    map.insert(
+        "PUSH.W",
+        HashMap::from([("E", PUSH_REG_WORD), ("W", PUSH_NUM_WORD)]),
+    );
+    map.insert("POP.B", HashMap::from([("R", POP_REG_BYTE)]));
+    map.insert("POP.W", HashMap::from([("E", POP_REG_WORD)]));
+    map.insert(
         "SWAP.B",
         HashMap::from([
             ("II", SWAP_REG_REG_BYTE),
@@ -616,8 +600,8 @@ fn make_math_args_map_w(
 
 #[cfg(test)]
 mod test {
-    use crate::arg_matches::ARG_MATCHES;
-    use maikor_language::{op_desc, ops};
+    use crate::arg_patterns::ARG_MATCHES;
+    use maikor_platform::{op_desc, ops};
     use std::collections::HashMap;
 
     #[test]

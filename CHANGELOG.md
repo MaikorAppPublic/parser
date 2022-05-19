@@ -1,5 +1,8 @@
 ## Pre-alpha
 
+### 0.1.3
+- Rewrite to support index addressing
+
 ### 0.1.2
 
 - *BREAKING CHANGE*
