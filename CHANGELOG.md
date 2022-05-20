@@ -1,5 +1,8 @@
 ## Pre-alpha
 
+### 0.1.4
+- Make `Program` fields public
+
 ### 0.1.3
 - Rewrite to support index addressing
 

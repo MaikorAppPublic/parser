@@ -83,8 +83,8 @@ impl Line {
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Program {
-    lines: Vec<ParsedLine>,
-    bytes: Vec<u8>,
+    pub lines: Vec<ParsedLine>,
+    pub bytes: Vec<u8>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
