@@ -13,50 +13,56 @@ use thiserror::Error;
 pub enum ParseError {
     #[error("Line was empty (internal parser error)")]
     EmptyLine,
-    #[error("Unable to parse {0}: {1} ({2})")]
+    #[error("Unable to parse line {0}: {1} ({2})")]
     General(usize, String, String),
-    #[error("Unable to parse {0}: {1}")]
-    GeneralArg(String, String),
-    #[error("Invalid Address format {1}: {0}, must be $x0 - $xFFFF")]
-    AddressHexFormat(String, String),
-    #[error("Invalid Address format {1}: {0}, must be $0 - $65535")]
-    AddressNumFormat(String, String),
-    #[error("Address out outside of valid range {0}, must be less than 65535 or xFFFF")]
-    AddressTooBig(String),
-    #[error("Invalid Number literal format {1}: {0}, must be 0 - 65535")]
-    NumberFormat(String, String),
-    #[error("Invalid Number literal format {1}: {0}, must be x0 - xFFFF")]
-    NumberHexFormat(String, String),
-    #[error("Number literal out outside of valid range {0}, must be less than 65535 or xFFFF")]
-    NumberTooBig(String),
-    #[error("Register has invalid format {0}, expected {1}")]
-    InvalidRegister(String, String),
-    #[error("Invalid Number literal format {1}, {0}, must be -32768 to 32767")]
-    SignedNumberNumFormat(String, String),
-    #[error("Invalid Number literal format {0}, must be -32768 to 32767")]
-    SignedNumberNumRange(String),
-    #[error("This instruction only supports byte (0-255), was {0}")]
-    NumberMustBeByte(String),
-    #[error("Instruction unknown/unsupported: {0} {0:02X}")]
-    InvalidOpCode(u8),
-    #[error("Arguments {0} don't match instruction {1}, supported: {2}")]
-    InvalidArguments(String, String, String),
-    #[error("{0} requires arguments, supported: {1}")]
-    MissingArguments(String, String),
-    #[error("No op found named '{0}', maybe you're missing the size? ('.B' or '.W')")]
-    InvalidOpName(String),
-    #[error("Invalid character literal, must be one ASCII character in single quotes")]
-    InvalidCharacter(String),
-    #[error("Couldn't parse number or register for offset: {0}")]
-    InvalidOffset(String),
+    #[error("Invalid Address format {2}: {1} on line {0}, must be $x0 - $xFFFF")]
+    AddressHexFormat(usize, String, String),
+    #[error("Invalid Address format {2}: {1} on line {0}, must be $0 - $65535")]
+    AddressNumFormat(usize, String, String),
+    #[error(
+        "Address out outside of valid range {1} on line {0}, must be less than 65535 or xFFFF"
+    )]
+    AddressTooBig(usize, String),
+    #[error("Invalid Number literal format {2}: {1} on line {0}, must be 0 - 65535")]
+    NumberFormat(usize, String, String),
+    #[error("Invalid Number literal format {2}: {1} on line {0}, must be x0 - xFFFF")]
+    NumberHexFormat(usize, String, String),
+    #[error("Number literal out outside of valid range {1} on line {0}, must be less than 65535 or xFFFF")]
+    NumberTooBig(usize, String),
+    #[error("Register has invalid format {1} on line {0}, expected {2}")]
+    InvalidRegister(usize, String, String),
+    #[error("Invalid Number literal format {2}, {1} on line {0}, must be -32768 to 32767")]
+    SignedNumberNumFormat(usize, String, String),
+    #[error("Invalid Number literal format {1} on line {0}, must be -32768 to 32767")]
+    SignedNumberNumRange(usize, String),
+    #[error("This instruction only supports byte (0-255), was {1} on line {0}")]
+    NumberMustBeByte(usize, String),
+    #[error("Instruction unknown/unsupported: {1} {1:02X} on line {0}")]
+    InvalidOpCode(usize, u8),
+    #[error("Arguments {1} don't match instruction {2} (line {0}), supported: {3}")]
+    InvalidArguments(usize, String, String, String),
+    #[error("{1} (line {0}) requires arguments, supported: {2}")]
+    MissingArguments(usize, String, String),
+    #[error("No op found named '{1}', maybe you're missing the size? ('.B' or '.W') on line {0}")]
+    InvalidOpName(usize, String),
+    #[error(
+        "Invalid character literal {1}, must be one ASCII character in single quotes on line {0}"
+    )]
+    InvalidCharacter(usize, String),
+    #[error("Couldn't parse number or register for offset {1} on line {0}")]
+    InvalidOffset(usize, String),
 }
 
 impl ParseError {
     fn num_to_addr(self) -> Self {
         match self {
-            ParseError::NumberFormat(msg, err) => ParseError::AddressNumFormat(msg, err),
-            ParseError::NumberHexFormat(msg, err) => ParseError::AddressHexFormat(msg, err),
-            ParseError::NumberTooBig(msg) => ParseError::AddressTooBig(msg),
+            ParseError::NumberFormat(line_num, msg, err) => {
+                ParseError::AddressNumFormat(line_num, msg, err)
+            }
+            ParseError::NumberHexFormat(line_num, msg, err) => {
+                ParseError::AddressHexFormat(line_num, msg, err)
+            }
+            ParseError::NumberTooBig(line_num, msg) => ParseError::AddressTooBig(line_num, msg),
             _ => self,
         }
     }
@@ -118,11 +124,11 @@ fn parse_line(line: Line) -> Result<ParsedLine, ParseError> {
         let mut arguments = vec![];
         let expects_bytes = ops::expects_bytes(&command);
         for arg in args {
-            let arg_token = parse_argument(arg)?;
+            let arg_token = parse_argument(line.num, arg)?;
             arguments.push(arg_token.to_argument(expects_bytes));
         }
         let pattern = arg_list_to_letters(&arguments);
-        bytes.push(get_op_code(&command, &pattern)?);
+        bytes.push(get_op_code(line.num, &command, &pattern)?);
         for arg in arguments {
             bytes.extend_from_slice(&arg.to_bytes());
         }

@@ -1,5 +1,9 @@
 ## Pre-alpha
 
+### 0.1.5
+- Improve error data
+- Fix parsing issues
+
 ### 0.1.4
 - Make `Program` fields public
 

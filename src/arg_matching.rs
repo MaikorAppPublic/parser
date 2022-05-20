@@ -53,7 +53,7 @@ pub fn arg_list_to_letters(args: &[Argument]) -> String {
     output
 }
 
-pub fn get_op_code(op_name: &str, pattern: &str) -> Result<u8, ParseError> {
+pub fn get_op_code(line_num: usize, op_name: &str, pattern: &str) -> Result<u8, ParseError> {
     if let Some(map) = ARG_MATCHES.get(op_name) {
         if let Some(op_code) = map.get(pattern) {
             Ok(*op_code)
@@ -61,9 +61,14 @@ pub fn get_op_code(op_name: &str, pattern: &str) -> Result<u8, ParseError> {
             let options: Vec<&&str> = map.keys().collect();
             let options_text = format!("{:?}", options);
             if pattern.is_empty() {
-                Err(MissingArguments(op_name.to_string(), options_text))
+                Err(MissingArguments(
+                    line_num,
+                    op_name.to_string(),
+                    options_text,
+                ))
             } else {
                 Err(InvalidArguments(
+                    line_num,
                     pattern.to_string(),
                     op_name.to_string(),
                     options_text,
@@ -71,7 +76,7 @@ pub fn get_op_code(op_name: &str, pattern: &str) -> Result<u8, ParseError> {
             }
         }
     } else {
-        Err(InvalidOpName(op_name.to_string()))
+        Err(InvalidOpName(line_num, op_name.to_string()))
     }
 }
 

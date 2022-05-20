@@ -35,15 +35,16 @@ impl ArgToken {
     }
 }
 
-pub fn parse_argument(arg: &str) -> Result<ArgToken, ParseError> {
+pub fn parse_argument(line_num: usize, arg: &str) -> Result<ArgToken, ParseError> {
     let trimmed = arg.trim_matches(|c: char| c == ',' || c.is_whitespace());
     return if trimmed.starts_with('$') {
-        match detect_num(arg, trimmed.trim_start_matches('$')) {
+        match detect_num(line_num, arg, trimmed.trim_start_matches('$')) {
             Ok(addr) => {
                 if let Some(addr) = addr {
                     Ok(ArgToken::Address(addr))
                 } else {
-                    Err(GeneralArg(
+                    Err(General(
+                        line_num,
                         arg.to_string(),
                         String::from("No address after $"),
                     ))
@@ -52,10 +53,10 @@ pub fn parse_argument(arg: &str) -> Result<ArgToken, ParseError> {
             Err(err) => Err(err.num_to_addr()),
         }
     } else {
-        match parse_register(trimmed) {
+        match parse_register(line_num, trimmed) {
             Ok(reg) => Ok(reg),
             Err(reg_err) => {
-                if let Some(num) = detect_num(arg, trimmed)? {
+                if let Some(num) = detect_num(line_num, arg, trimmed)? {
                     Ok(ArgToken::Number(num))
                 } else {
                     Err(reg_err)
@@ -65,19 +66,20 @@ pub fn parse_argument(arg: &str) -> Result<ArgToken, ParseError> {
     };
 }
 
-fn parse_register(reg: &str) -> Result<ArgToken, ParseError> {
+fn parse_register(line_num: usize, reg: &str) -> Result<ArgToken, ParseError> {
     let remaining: String = reg.chars().filter(|c| !c.is_whitespace()).collect();
     let (ppid, remaining) = detect_ppid(&remaining);
-    let (is_indirect, remaining) = detect_indirect(reg, remaining)?;
+    let (is_indirect, remaining) = detect_indirect(line_num, reg, remaining)?;
     if let Some((dst, offset)) = remaining.split_once(|c| c == '+') {
         if ppid.is_some() {
             return Err(InvalidRegister(
+                line_num,
                 reg.to_string(),
                 String::from("Can't use PPID and offset"),
             ));
         }
-        let dst = detect_register(reg, dst)?;
-        let offset = detect_offset(reg, offset)?;
+        let dst = detect_register(line_num, reg, dst)?;
+        let offset = detect_offset(line_num, reg, offset)?;
         let meta: u8 = RegisterPPID::new(
             is_indirect,
             offset.reg.is_some(),
@@ -88,7 +90,7 @@ fn parse_register(reg: &str) -> Result<ArgToken, ParseError> {
         .into();
         Ok(ArgToken::Register(dst + meta, offset.reg(), offset.num))
     } else {
-        let reg = detect_register(reg, remaining)?;
+        let reg = detect_register(line_num, reg, remaining)?;
         let meta: u8 = RegisterPPID::new(is_indirect, false, false, false, ppid).into();
         Ok(ArgToken::Register(reg + meta, None, None))
     }
@@ -117,9 +119,9 @@ impl Offset {
     }
 }
 
-fn detect_offset(original: &str, offset: &str) -> Result<Offset, ParseError> {
-    let num_result = detect_num(original, offset);
-    let reg_result = detect_register(original, offset);
+fn detect_offset(line_num: usize, original: &str, offset: &str) -> Result<Offset, ParseError> {
+    let num_result = detect_num(line_num, original, offset);
+    let reg_result = detect_register(line_num, original, offset);
     if let Ok(reg) = reg_result {
         if id::size(reg as usize) == 1 {
             Ok(Offset::new(Some(reg), None, None))
@@ -129,23 +131,32 @@ fn detect_offset(original: &str, offset: &str) -> Result<Offset, ParseError> {
     } else if let Ok(Some(num)) = num_result {
         Ok(Offset::new(None, None, Some(num)))
     } else {
-        Err(InvalidOffset(offset.to_string()))
+        Err(InvalidOffset(line_num, offset.to_string()))
     }
 }
 
-fn detect_register(original: &str, remaining: &str) -> Result<u8, ParseError> {
+fn detect_register(line_num: usize, original: &str, remaining: &str) -> Result<u8, ParseError> {
     match id::from_name(&remaining.to_ascii_uppercase()) {
         Ok(id) => Ok(id as u8),
-        Err(err) => Err(InvalidRegister(original.to_string(), err.to_string())),
+        Err(err) => Err(InvalidRegister(
+            line_num,
+            original.to_string(),
+            err.to_string(),
+        )),
     }
 }
 
-fn detect_indirect<'a>(original: &str, remaining: &'a str) -> Result<(bool, &'a str), ParseError> {
+fn detect_indirect<'a>(
+    line_num: usize,
+    original: &str,
+    remaining: &'a str,
+) -> Result<(bool, &'a str), ParseError> {
     if remaining.starts_with('(') {
         if remaining.ends_with(')') {
             Ok((true, remaining.trim_matches(|c| c == '(' || c == ')')))
         } else {
             Err(InvalidRegister(
+                line_num,
                 original.to_string(),
                 String::from("')' at end, as '(' was found at start"),
             ))
@@ -155,7 +166,7 @@ fn detect_indirect<'a>(original: &str, remaining: &'a str) -> Result<(bool, &'a 
     }
 }
 
-fn detect_num(original: &str, remaining: &str) -> Result<Option<u16>, ParseError> {
+fn detect_num(line_num: usize, original: &str, remaining: &str) -> Result<Option<u16>, ParseError> {
     if remaining.starts_with('\'') && remaining.ends_with('\'') {
         if remaining.chars().count() == 3 {
             if let Some(chr) = remaining.chars().nth(1) {
@@ -166,17 +177,21 @@ fn detect_num(original: &str, remaining: &str) -> Result<Option<u16>, ParseError
         } else if remaining == "'\''" {
             return Ok(Some(39)); //ASCII ' char
         }
-        Err(InvalidCharacter(remaining.to_string()))
+        Err(InvalidCharacter(line_num, remaining.to_string()))
     } else if remaining.starts_with('x') {
         match usize::from_str_radix(remaining.trim_start_matches('x'), 16) {
             Ok(num) => {
                 if num <= u16::MAX as usize {
                     Ok(Some(num as u16))
                 } else {
-                    Err(NumberTooBig(original.to_string()))
+                    Err(NumberTooBig(line_num, original.to_string()))
                 }
             }
-            Err(err) => Err(NumberHexFormat(original.to_string(), err.to_string())),
+            Err(err) => Err(NumberHexFormat(
+                line_num,
+                original.to_string(),
+                err.to_string(),
+            )),
         }
     } else if remaining.starts_with('b') {
         match usize::from_str_radix(remaining.trim_start_matches('b'), 2) {
@@ -184,10 +199,14 @@ fn detect_num(original: &str, remaining: &str) -> Result<Option<u16>, ParseError
                 if num <= u16::MAX as usize {
                     Ok(Some(num as u16))
                 } else {
-                    Err(NumberTooBig(original.to_string()))
+                    Err(NumberTooBig(line_num, original.to_string()))
                 }
             }
-            Err(err) => Err(NumberFormat(original.to_string(), err.to_string())),
+            Err(err) => Err(NumberFormat(
+                line_num,
+                original.to_string(),
+                err.to_string(),
+            )),
         }
     } else if remaining.starts_with('-') {
         match remaining.parse::<isize>() {
@@ -195,10 +214,14 @@ fn detect_num(original: &str, remaining: &str) -> Result<Option<u16>, ParseError
                 if num >= i16::MIN as isize && num <= i16::MAX as isize {
                     Ok(Some(num as i16 as u16))
                 } else {
-                    Err(SignedNumberNumRange(original.to_string()))
+                    Err(SignedNumberNumRange(line_num, original.to_string()))
                 }
             }
-            Err(err) => Err(SignedNumberNumFormat(original.to_string(), err.to_string())),
+            Err(err) => Err(SignedNumberNumFormat(
+                line_num,
+                original.to_string(),
+                err.to_string(),
+            )),
         }
     } else if remaining.chars().all(|c| c.is_digit(10)) {
         match remaining.parse::<usize>() {
@@ -206,10 +229,14 @@ fn detect_num(original: &str, remaining: &str) -> Result<Option<u16>, ParseError
                 if num <= u16::MAX as usize {
                     Ok(Some(num as u16))
                 } else {
-                    Err(NumberTooBig(original.to_string()))
+                    Err(NumberTooBig(line_num, original.to_string()))
                 }
             }
-            Err(err) => Err(NumberFormat(original.to_string(), err.to_string())),
+            Err(err) => Err(NumberFormat(
+                line_num,
+                original.to_string(),
+                err.to_string(),
+            )),
         }
     } else {
         Ok(None)
@@ -297,119 +324,119 @@ mod test {
 
     #[test]
     fn test_parse_argument() {
-        assert_eq!(parse_argument("605").unwrap(), Number(605));
-        assert_eq!(parse_argument("xF11").unwrap(), Number(3857));
-        assert_eq!(parse_argument("$100").unwrap(), Address(100));
-        assert_eq!(parse_argument("$xF").unwrap(), Address(15));
-        assert_eq!(parse_argument("aL").unwrap(), Register(1, None, None));
+        assert_eq!(parse_argument(0, "605").unwrap(), Number(605));
+        assert_eq!(parse_argument(0, "xF11").unwrap(), Number(3857));
+        assert_eq!(parse_argument(0, "$100").unwrap(), Address(100));
+        assert_eq!(parse_argument(0, "$xF").unwrap(), Address(15));
+        assert_eq!(parse_argument(0, "aL").unwrap(), Register(1, None, None));
         assert_eq!(
-            parse_argument("(Bx)").unwrap(),
+            parse_argument(0, "(Bx)").unwrap(),
             Register(10 | INDIRECT, None, None)
         );
         assert_eq!(
-            parse_argument("-ch").unwrap(),
+            parse_argument(0, "-ch").unwrap(),
             Register(4 | PRE_DEC, None, None)
         );
         assert_eq!(
-            parse_argument("(dx)+").unwrap(),
+            parse_argument(0, "(dx)+").unwrap(),
             Register(12 | IND_POST_INC, None, None)
         );
         assert_eq!(
-            parse_argument("(ax+563)").unwrap(),
+            parse_argument(0, "(ax+563)").unwrap(),
             Register(9 | IND_OFFSET_NUM, None, Some(563))
         );
         assert_eq!(
-            parse_argument("(ax+dh)").unwrap(),
+            parse_argument(0, "(ax+dh)").unwrap(),
             Register(9 | IND_OFFSET_REG, Some(6), None)
         );
         assert_eq!(
-            parse_argument("(ax+bx)").unwrap(),
+            parse_argument(0, "(ax+bx)").unwrap(),
             Register(9 | IND_OFFSET_EXT_REG, Some(10), None)
         );
 
-        assert!(parse_argument("a").is_err());
-        assert!(parse_argument("78021").is_err());
-        assert!(parse_argument("xFFFF1").is_err());
-        assert!(parse_argument("$121231").is_err());
-        assert!(parse_argument("(dx").is_err());
-        assert!(parse_argument("(dx+141351)").is_err());
-        assert!(parse_argument("(dx+a)").is_err());
-        assert!(parse_argument("(-dx+a)").is_err());
-        assert!(parse_argument("((dx)+al)").is_err());
-        assert!(parse_argument("(dx+10)-").is_err());
+        assert!(parse_argument(0, "a").is_err());
+        assert!(parse_argument(0, "78021").is_err());
+        assert!(parse_argument(0, "xFFFF1").is_err());
+        assert!(parse_argument(0, "$121231").is_err());
+        assert!(parse_argument(0, "(dx").is_err());
+        assert!(parse_argument(0, "(dx+141351)").is_err());
+        assert!(parse_argument(0, "(dx+a)").is_err());
+        assert!(parse_argument(0, "(-dx+a)").is_err());
+        assert!(parse_argument(0, "((dx)+al)").is_err());
+        assert!(parse_argument(0, "(dx+10)-").is_err());
     }
 
     #[test]
     fn test_register() {
-        assert_eq!(parse_register("AH ").unwrap(), (Register(0, None, None)));
-        assert_eq!(parse_register("AX").unwrap(), (Register(9, None, None)));
+        assert_eq!(parse_register(0, "AH ").unwrap(), (Register(0, None, None)));
+        assert_eq!(parse_register(0, "AX").unwrap(), (Register(9, None, None)));
         assert_eq!(
-            parse_register("(AX )").unwrap(),
+            parse_register(0, "(AX )").unwrap(),
             (Register(9 | INDIRECT, None, None))
         );
         assert_eq!(
-            parse_register("- ( AX)").unwrap(),
+            parse_register(0, "- ( AX)").unwrap(),
             (Register(9 | IND_PRE_DEC, None, None))
         );
         assert_eq!(
-            parse_register("CL +").unwrap(),
+            parse_register(0, "CL +").unwrap(),
             (Register(5 | POST_INC, None, None))
         );
         assert_eq!(
-            parse_register("( DX + 10)").unwrap(),
+            parse_register(0, "( DX + 10)").unwrap(),
             (Register(12 | IND_OFFSET_NUM, None, Some(10)))
         );
         assert_eq!(
-            parse_register("(DX + BH )").unwrap(),
+            parse_register(0, "(DX + BH )").unwrap(),
             (Register(12 | IND_OFFSET_REG, Some(2), None))
         );
         assert_eq!(
-            parse_register("( CX + AX)").unwrap(),
+            parse_register(0, "( CX + AX)").unwrap(),
             (Register(11 | IND_OFFSET_EXT_REG, Some(9), None))
         );
     }
 
     #[test]
     fn test_register_detection() {
-        assert_eq!(detect_register("ah", "ah").unwrap(), 0);
-        assert_eq!(detect_register("al", "al").unwrap(), 1);
-        assert_eq!(detect_register("bh", "bh").unwrap(), 2);
-        assert_eq!(detect_register("bl", "bl").unwrap(), 3);
-        assert_eq!(detect_register("ch", "ch").unwrap(), 4);
-        assert_eq!(detect_register("cl", "cl").unwrap(), 5);
-        assert_eq!(detect_register("dh", "dh").unwrap(), 6);
-        assert_eq!(detect_register("dl", "dl").unwrap(), 7);
-        assert_eq!(detect_register("flg", "flg").unwrap(), 8);
-        assert_eq!(detect_register("ax", "ax").unwrap(), 9);
-        assert_eq!(detect_register("bx", "bx").unwrap(), 10);
-        assert_eq!(detect_register("cx", "cx").unwrap(), 11);
-        assert_eq!(detect_register("dx", "dx").unwrap(), 12);
+        assert_eq!(detect_register(0, "ah", "ah").unwrap(), 0);
+        assert_eq!(detect_register(0, "al", "al").unwrap(), 1);
+        assert_eq!(detect_register(0, "bh", "bh").unwrap(), 2);
+        assert_eq!(detect_register(0, "bl", "bl").unwrap(), 3);
+        assert_eq!(detect_register(0, "ch", "ch").unwrap(), 4);
+        assert_eq!(detect_register(0, "cl", "cl").unwrap(), 5);
+        assert_eq!(detect_register(0, "dh", "dh").unwrap(), 6);
+        assert_eq!(detect_register(0, "dl", "dl").unwrap(), 7);
+        assert_eq!(detect_register(0, "flg", "flg").unwrap(), 8);
+        assert_eq!(detect_register(0, "ax", "ax").unwrap(), 9);
+        assert_eq!(detect_register(0, "bx", "bx").unwrap(), 10);
+        assert_eq!(detect_register(0, "cx", "cx").unwrap(), 11);
+        assert_eq!(detect_register(0, "dx", "dx").unwrap(), 12);
 
-        assert!(detect_register("", "").is_err());
-        assert!(detect_register("", "a").is_err());
-        assert!(detect_register("", "al)").is_err());
-        assert!(detect_register("", "h").is_err());
-        assert!(detect_register("", "x").is_err());
-        assert!(detect_register("", "yh").is_err());
+        assert!(detect_register(0, "", "").is_err());
+        assert!(detect_register(0, "", "a").is_err());
+        assert!(detect_register(0, "", "al)").is_err());
+        assert!(detect_register(0, "", "h").is_err());
+        assert!(detect_register(0, "", "x").is_err());
+        assert!(detect_register(0, "", "yh").is_err());
     }
 
     #[test]
     fn test_indirect_detection() {
-        assert_eq!(detect_indirect("(al)", "(al)").unwrap(), (true, "al"));
-        assert_eq!(detect_indirect("(ax)", "(ax)").unwrap(), (true, "ax"));
+        assert_eq!(detect_indirect(0, "(al)", "(al)").unwrap(), (true, "al"));
+        assert_eq!(detect_indirect(0, "(ax)", "(ax)").unwrap(), (true, "ax"));
         assert_eq!(
-            detect_indirect("(al+ax)", "(al+ax)").unwrap(),
+            detect_indirect(0, "(al+ax)", "(al+ax)").unwrap(),
             (true, "al+ax")
         );
         assert_eq!(
-            detect_indirect("(ax+500)", "(ax+500)").unwrap(),
+            detect_indirect(0, "(ax+500)", "(ax+500)").unwrap(),
             (true, "ax+500")
         );
 
-        assert_eq!(detect_indirect("al)", "al)").unwrap(), (false, "al)"));
+        assert_eq!(detect_indirect(0, "al)", "al)").unwrap(), (false, "al)"));
 
-        assert!(detect_indirect("(", "(").is_err());
-        assert!(detect_indirect("(al+500", "(al+500").is_err());
+        assert!(detect_indirect(0, "(", "(").is_err());
+        assert!(detect_indirect(0, "(al+500", "(al+500").is_err());
     }
 
     #[test]
@@ -431,58 +458,58 @@ mod test {
     #[test]
     fn test_offset_detection() {
         assert_eq!(
-            detect_offset("", "100").unwrap(),
+            detect_offset(0, "", "100").unwrap(),
             Offset {
                 num: Some(100),
                 ..Offset::default()
             }
         );
         assert_eq!(
-            detect_offset("", "x100").unwrap(),
+            detect_offset(0, "", "x100").unwrap(),
             Offset {
                 num: Some(256),
                 ..Offset::default()
             }
         );
         assert_eq!(
-            detect_offset("", "-124").unwrap(),
+            detect_offset(0, "", "-124").unwrap(),
             Offset {
                 num: Some(65412),
                 ..Offset::default()
             }
         );
         assert_eq!(
-            detect_offset("", "bl").unwrap(),
+            detect_offset(0, "", "bl").unwrap(),
             Offset {
                 reg: Some(3),
                 ..Offset::default()
             }
         );
         assert_eq!(
-            detect_offset("", "dx").unwrap(),
+            detect_offset(0, "", "dx").unwrap(),
             Offset {
                 ext_reg: Some(12),
                 ..Offset::default()
             }
         );
 
-        assert!(detect_offset("", "(ax)").is_err());
-        assert!(detect_offset("", "90000").is_err());
-        assert!(detect_offset("", "xFFFFF").is_err());
-        assert!(detect_offset("", "-ax").is_err());
-        assert!(detect_offset("", "al+").is_err());
+        assert!(detect_offset(0, "", "(ax)").is_err());
+        assert!(detect_offset(0, "", "90000").is_err());
+        assert!(detect_offset(0, "", "xFFFFF").is_err());
+        assert!(detect_offset(0, "", "-ax").is_err());
+        assert!(detect_offset(0, "", "al+").is_err());
     }
 
     #[test]
     fn test_num_detection() {
-        assert_eq!(detect_num("", "0").unwrap().unwrap(), 0);
-        assert_eq!(detect_num("", "x0").unwrap().unwrap(), 0);
-        assert_eq!(detect_num("", "b0").unwrap().unwrap(), 0);
-        assert_eq!(detect_num("", "1").unwrap().unwrap(), 1);
-        assert_eq!(detect_num("", "-1").unwrap().unwrap(), 65535);
-        assert_eq!(detect_num("", "x1").unwrap().unwrap(), 1);
-        assert_eq!(detect_num("", "b1").unwrap().unwrap(), 1);
-        assert_eq!(detect_num("", "'A'").unwrap().unwrap(), 65);
-        assert_eq!(detect_num("", "'\''").unwrap().unwrap(), 39);
+        assert_eq!(detect_num(0, "", "0").unwrap().unwrap(), 0);
+        assert_eq!(detect_num(0, "", "x0").unwrap().unwrap(), 0);
+        assert_eq!(detect_num(0, "", "b0").unwrap().unwrap(), 0);
+        assert_eq!(detect_num(0, "", "1").unwrap().unwrap(), 1);
+        assert_eq!(detect_num(0, "", "-1").unwrap().unwrap(), 65535);
+        assert_eq!(detect_num(0, "", "x1").unwrap().unwrap(), 1);
+        assert_eq!(detect_num(0, "", "b1").unwrap().unwrap(), 1);
+        assert_eq!(detect_num(0, "", "'A'").unwrap().unwrap(), 65);
+        assert_eq!(detect_num(0, "", "'\''").unwrap().unwrap(), 39);
     }
 }
