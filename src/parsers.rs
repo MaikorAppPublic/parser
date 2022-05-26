@@ -16,7 +16,7 @@ impl ArgToken {
         match self {
             ArgToken::Address(addr) => Argument::Address(addr),
             ArgToken::Register(op, offset_reg, offset_num) => {
-                if id::size((op & 0x0F) as usize) == 1 {
+                if id::size(op & 0x0F) == 1 {
                     Argument::Register(op)
                 } else if op & INDIRECT == 0 {
                     Argument::ExtReg(op)
@@ -123,7 +123,7 @@ fn detect_offset(line_num: usize, original: &str, offset: &str) -> Result<Offset
     let num_result = detect_num(line_num, original, offset);
     let reg_result = detect_register(line_num, original, offset);
     if let Ok(reg) = reg_result {
-        if id::size(reg as usize) == 1 {
+        if id::size(reg) == 1 {
             Ok(Offset::new(Some(reg), None, None))
         } else {
             Ok(Offset::new(None, Some(reg), None))

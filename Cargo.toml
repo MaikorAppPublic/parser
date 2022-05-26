@@ -11,6 +11,6 @@ homepage = "https://maikor.app"
 
 [dependencies]
 thiserror = "1.0.31"
-maikor-platform = "0.1.18"
+maikor-platform = "0.1.22"
 lazy_static = "1.4.0"
 regex = "1.5.5"

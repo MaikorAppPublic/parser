@@ -447,6 +447,37 @@ fn make_map() -> HashMap<&'static str, HashMap<&'static str, u8>> {
         "NOT.W",
         HashMap::from([("E", NOT_REG_WORD), ("I", NOT_REG_WORD)]),
     );
+    map.insert(
+        "MSWP",
+        HashMap::from([
+            ("AAB", MSWP_ADDR_ADDR_BYTE),
+            ("AAR", MSWP_ADDR_ADDR_REG),
+            ("AAI", MSWP_ADDR_ADDR_REG),
+            ("AEB", MSWP_ADDR_REG_BYTE),
+            ("AIB", MSWP_ADDR_REG_BYTE),
+            ("IAB", MSWP_REG_ADDR_BYTE),
+            ("EAB", MSWP_REG_ADDR_BYTE),
+            ("IIB", MSWP_REG_REG_BYTE),
+            ("EIB", MSWP_REG_REG_BYTE),
+            ("IEB", MSWP_REG_REG_BYTE),
+            ("AII", MSWP_ADDR_REG_REG),
+            ("III", MSWP_REG_REG_REG),
+            ("EII", MSWP_REG_REG_REG),
+            ("IEI", MSWP_REG_REG_REG),
+            ("EEI", MSWP_REG_REG_REG),
+            ("AIR", MSWP_ADDR_REG_REG),
+            ("AER", MSWP_ADDR_REG_REG),
+            ("IAR", MSWP_REG_ADDR_REG),
+            ("EAR", MSWP_REG_ADDR_REG),
+            ("IAI", MSWP_REG_ADDR_REG),
+            ("EAI", MSWP_REG_ADDR_REG),
+            ("IIR", MSWP_REG_REG_REG),
+            ("EIR", MSWP_REG_REG_REG),
+            ("EER", MSWP_REG_REG_REG),
+            ("IER", MSWP_REG_REG_REG),
+        ]),
+    );
+
     map
 }
 
