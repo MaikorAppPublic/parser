@@ -1,6 +1,6 @@
 [package]
 name = "maikor-asm-parser"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 authors = ["Ray Britton <raybritton@pm.me>"]
 description = "Maikor ASM parser"
