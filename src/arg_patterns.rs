@@ -268,6 +268,22 @@ fn make_map() -> HashMap<&'static str, HashMap<&'static str, u8>> {
         make_logic_args_map_w(ROR_REG_REG_WORD, ROR_REG_NUM_WORD, ROR_ADDR_WORD),
     );
     map.insert(
+        "RCL.B",
+        make_logic_args_map_b(RCL_REG_REG_BYTE, RCL_REG_NUM_BYTE, RCL_ADDR_BYTE),
+    );
+    map.insert(
+        "RCL.W",
+        make_logic_args_map_w(RCL_REG_REG_WORD, RCL_REG_NUM_WORD, RCL_ADDR_WORD),
+    );
+    map.insert(
+        "RCR.B",
+        make_logic_args_map_b(RCR_REG_REG_BYTE, RCR_REG_NUM_BYTE, RCR_ADDR_BYTE),
+    );
+    map.insert(
+        "RCR.W",
+        make_logic_args_map_w(RCR_REG_REG_WORD, RCR_REG_NUM_WORD, RCR_ADDR_WORD),
+    );
+    map.insert(
         "INC.B",
         HashMap::from([
             ("R", INC_REG_BYTE),

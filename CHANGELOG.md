@@ -1,5 +1,10 @@
 ## Pre-alpha
 
+### 0.1.7
+- Update dependencies
+  - Platform to 0.1.23
+- Add `RCR` and `RCL`
+
 ### 0.1.6
 - Update dependencies
   - Platform to 0.1.22
