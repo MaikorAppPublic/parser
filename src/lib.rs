@@ -143,10 +143,9 @@ pub fn parse_line_from_str(text: &str) -> Result<ParsedLine, ParseError> {
 
 #[cfg(test)]
 mod test {
+    use maikor_platform::op_params::{IND_OFFSET_REG, IND_PRE_DEC};
     use super::*;
-    use maikor_platform::ops::{
-        ADD_REG_NUM_BYTE, CMP_REG_NUM_BYTE, INC_REG_BYTE, INC_REG_WORD, JE_ADDR,
-    };
+    use maikor_platform::ops::{ADD_REG_NUM_BYTE, ADD_REG_NUM_WORD, CMP_REG_NUM_BYTE, INC_REG_BYTE, INC_REG_WORD, JE_ADDR, MEM_CPY_ADDR_REG_BYTE};
     use maikor_platform::registers::id;
     use maikor_platform::registers::id::AL;
 
@@ -199,6 +198,30 @@ mod test {
                 JE_ADDR,
                 0,
                 50,
+            ]
+        );
+    }
+
+    #[test]
+    fn whitespace_test() {
+        let lines = vec!["  mcpy $255,- (    bx ) ,  1 ", " inc.b   ah      ", "  add.w  (   bx +   ah    )     ,  124 "];
+        let output = parse_program(&lines).unwrap();
+        assert_eq!(output.lines.len(), 3);
+        assert_eq!(
+            output.bytes,
+            vec![
+                MEM_CPY_ADDR_REG_BYTE,
+                0,
+                255,
+                id::BX | IND_PRE_DEC,
+                1,
+                INC_REG_BYTE,
+                id::AH,
+                ADD_REG_NUM_WORD,
+                id::BX | IND_OFFSET_REG,
+                0,
+                124,
+                id::AH
             ]
         );
     }

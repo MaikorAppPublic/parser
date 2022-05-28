@@ -29,11 +29,11 @@ pub fn interpret_line(line_num: usize, trimmed: &str) -> Result<Line, ParseError
         }
     }
 
-    let remaining = parts.collect::<Vec<&str>>().join("");
+    let remaining = parts.collect::<Vec<&str>>().join(" ");
     if !remaining.is_empty() {
         let args = remaining
             .split(',')
-            .map(|str| str.to_string())
+            .map(|str| str.trim().to_string())
             .collect::<Vec<String>>();
         if let Some(command) = line.command.as_mut() {
             command.1 = args;
@@ -68,7 +68,7 @@ mod test {
         test_op("inc.w", "ax", vec!["ax"]);
         test_op("swap.b", "aH, Al", vec!["aH", "Al"]);
         test_op("swap.w", "ax, bx", vec!["ax", "bx"]);
-        test_op("add.w", "( ax + al), 19", vec!["(ax+al)", "19"]);
+        test_op("add.w", "( ax + al), 19", vec!["( ax + al)", "19"]);
         test_op("muls.b", "(ax)+, bh", vec!["(ax)+", "bh"]);
         test_op("cpy.b", "-(dl), $550", vec!["-(dl)", "$550"]);
         test_op("mcpy", "$5111, cx, 12", vec!["$5111", "cx", "12"]);
@@ -84,5 +84,27 @@ mod test {
             line.command,
             Some((String::from("INC.B"), vec![String::from("(AX)")]))
         );
+    }
+
+    #[test]
+    fn whitespace_tests() {
+        let line = interpret_line(1, "cpy.b ah, ' '").unwrap();
+        assert_eq!(line.num, 1);
+        assert_eq!(line.original, "cpy.b ah, ' '");
+        assert_eq!(line.label, None);
+        assert_eq!(
+            line.command,
+            Some((String::from("cpy.b"), vec![String::from("ah"), String::from("' '")]))
+        );
+
+        let line = interpret_line(2, " mcpy ax + ,  - (  bx) ,    1 ").unwrap();
+        assert_eq!(line.num, 2);
+        assert_eq!(line.original, " mcpy ax + ,  - (  bx) ,    1 ");
+        assert_eq!(line.label, None);
+        assert_eq!(
+            line.command,
+            Some((String::from("mcpy"), vec![String::from("ax +"), String::from("- ( bx)"), String::from("1")]))
+        );
+
     }
 }
