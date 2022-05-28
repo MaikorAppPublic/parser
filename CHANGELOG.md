@@ -1,5 +1,11 @@
 ## Pre-alpha
 
+### 0.1.10
+- Fix bugs:
+  - Whitespace in args
+  - Index addressing values mixed in to args
+  - Number parsing for several ops
+
 ### 0.1.9
 - Update dependencies
   - Platform to 0.1.25
