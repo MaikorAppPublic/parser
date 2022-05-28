@@ -493,6 +493,23 @@ fn make_map() -> HashMap<&'static str, HashMap<&'static str, u8>> {
             ("IER", MSWP_REG_REG_REG),
         ]),
     );
+    map.insert(
+        "BMUL",
+        HashMap::from([
+            ("AA", BMUL_ADDR_ADDR),
+            ("AR", BMUL_ADDR_REG),
+            ("AI", BMUL_ADDR_REG),
+            ("AB", BMUL_ADDR_NUM),
+            ("RA", BMUL_REG_ADDR),
+            ("RR", BMUL_REG_REG),
+            ("RI", BMUL_REG_REG),
+            ("RB", BMUL_REG_NUM),
+            ("IA", BMUL_REG_ADDR),
+            ("IR", BMUL_REG_REG),
+            ("II", BMUL_REG_REG),
+            ("IB", BMUL_REG_NUM),
+        ]),
+    );
 
     map
 }
