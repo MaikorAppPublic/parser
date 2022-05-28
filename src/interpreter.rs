@@ -94,7 +94,10 @@ mod test {
         assert_eq!(line.label, None);
         assert_eq!(
             line.command,
-            Some((String::from("cpy.b"), vec![String::from("ah"), String::from("' '")]))
+            Some((
+                String::from("cpy.b"),
+                vec![String::from("ah"), String::from("' '")]
+            ))
         );
 
         let line = interpret_line(2, " mcpy ax + ,  - (  bx) ,    1 ").unwrap();
@@ -103,8 +106,14 @@ mod test {
         assert_eq!(line.label, None);
         assert_eq!(
             line.command,
-            Some((String::from("mcpy"), vec![String::from("ax +"), String::from("- ( bx)"), String::from("1")]))
+            Some((
+                String::from("mcpy"),
+                vec![
+                    String::from("ax +"),
+                    String::from("- ( bx)"),
+                    String::from("1")
+                ]
+            ))
         );
-
     }
 }

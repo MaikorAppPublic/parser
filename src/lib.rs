@@ -129,8 +129,11 @@ fn parse_line(line: Line) -> Result<ParsedLine, ParseError> {
         }
         let pattern = arg_list_to_letters(&arguments);
         bytes.push(get_op_code(line.num, &command, &pattern)?);
-        for arg in arguments {
+        for arg in &arguments {
             bytes.extend_from_slice(&arg.to_bytes());
+        }
+        for arg in arguments {
+            bytes.extend_from_slice(&arg.to_offset_bytes());
         }
     }
     Ok(ParsedLine { line, bytes })
@@ -143,11 +146,13 @@ pub fn parse_line_from_str(text: &str) -> Result<ParsedLine, ParseError> {
 
 #[cfg(test)]
 mod test {
-    use maikor_platform::op_params::{IND_OFFSET_REG, IND_PRE_DEC};
     use super::*;
-    use maikor_platform::ops::{ADD_REG_NUM_BYTE, ADD_REG_NUM_WORD, CMP_REG_NUM_BYTE, INC_REG_BYTE, INC_REG_WORD, JE_ADDR, MEM_CPY_ADDR_REG_BYTE};
+    use maikor_platform::op_params::{IND_OFFSET_REG, IND_PRE_DEC};
+    use maikor_platform::ops::{
+        ADD_REG_NUM_BYTE, ADD_REG_NUM_WORD, CMP_REG_NUM_BYTE, INC_REG_BYTE, INC_REG_WORD, JE_ADDR,
+        MEM_CPY_ADDR_REG_BYTE,
+    };
     use maikor_platform::registers::id;
-    use maikor_platform::registers::id::AL;
 
     #[test]
     fn line_test() {
@@ -191,9 +196,9 @@ mod test {
             output.bytes,
             vec![
                 INC_REG_BYTE,
-                AL as u8,
+                id::AL,
                 CMP_REG_NUM_BYTE,
-                AL as u8,
+                id::AL,
                 1,
                 JE_ADDR,
                 0,
@@ -204,7 +209,11 @@ mod test {
 
     #[test]
     fn whitespace_test() {
-        let lines = vec!["  mcpy $255,- (    bx ) ,  1 ", " inc.b   ah      ", "  add.w  (   bx +   ah    )     ,  124 "];
+        let lines = vec![
+            "  mcpy $255,- (    bx ) ,  1 ",
+            " inc.b   ah      ",
+            "  add.w  (   bx +   al    )     ,  124 ",
+        ];
         let output = parse_program(&lines).unwrap();
         assert_eq!(output.lines.len(), 3);
         assert_eq!(
@@ -221,7 +230,7 @@ mod test {
                 id::BX | IND_OFFSET_REG,
                 0,
                 124,
-                id::AH
+                id::AL
             ]
         );
     }

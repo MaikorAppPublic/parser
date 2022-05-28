@@ -24,21 +24,27 @@ impl Argument {
         }
     }
 
+    pub fn to_offset_bytes(&self) -> Vec<u8> {
+        if let Argument::IndirectReg(_, offset_reg, offset_num) = self {
+            let mut output = vec![];
+            if let Some(reg) = offset_reg {
+                output.push(*reg);
+            }
+            if let Some(num) = offset_num {
+                output.extend_from_slice(&num.to_be_bytes());
+            }
+            output
+        } else {
+            vec![]
+        }
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
             Argument::Address(addr) => addr.to_be_bytes().to_vec(),
             Argument::Register(reg) => vec![*reg],
             Argument::ExtReg(reg) => vec![*reg],
-            Argument::IndirectReg(reg, offset_reg, offset_num) => {
-                let mut output = vec![*reg];
-                if let Some(reg) = offset_reg {
-                    output.push(*reg);
-                }
-                if let Some(num) = offset_num {
-                    output.extend_from_slice(&num.to_be_bytes());
-                }
-                output
-            }
+            Argument::IndirectReg(reg, _, _) => vec![*reg],
             Argument::Word(word) => word.to_be_bytes().to_vec(),
             Argument::Byte(byte) => vec![*byte],
         }
@@ -105,19 +111,35 @@ mod test {
         assert_eq!(Register(6 | PRE_DEC).to_bytes(), vec![6 | PRE_DEC]);
         assert_eq!(
             IndirectReg(9 | IND_OFFSET_REG, Some(2), None).to_bytes(),
-            vec![9 | IND_OFFSET_REG, 2]
+            vec![9 | IND_OFFSET_REG]
+        );
+        assert_eq!(
+            IndirectReg(9 | IND_OFFSET_REG, Some(2), None).to_offset_bytes(),
+            vec![2]
         );
         assert_eq!(
             IndirectReg(10 | IND_OFFSET_EXT_REG, Some(11), None).to_bytes(),
-            vec![10 | IND_OFFSET_EXT_REG, 11]
+            vec![10 | IND_OFFSET_EXT_REG]
+        );
+        assert_eq!(
+            IndirectReg(10 | IND_OFFSET_EXT_REG, Some(11), None).to_offset_bytes(),
+            vec![11]
         );
         assert_eq!(
             IndirectReg(9 | IND_OFFSET_NUM, None, Some(15)).to_bytes(),
-            vec![9 | IND_OFFSET_NUM, 0, 15]
+            vec![9 | IND_OFFSET_NUM]
+        );
+        assert_eq!(
+            IndirectReg(9 | IND_OFFSET_NUM, None, Some(15)).to_offset_bytes(),
+            vec![0, 15]
         );
         assert_eq!(
             IndirectReg(9 | IND_OFFSET_NUM, None, Some(567)).to_bytes(),
-            vec![9 | IND_OFFSET_NUM, 2, 55]
+            vec![9 | IND_OFFSET_NUM]
+        );
+        assert_eq!(
+            IndirectReg(9 | IND_OFFSET_NUM, None, Some(567)).to_offset_bytes(),
+            vec![2, 55]
         );
         assert_eq!(ExtReg(9).to_bytes(), vec![9]);
         assert_eq!(ExtReg(9 | PRE_DEC).to_bytes(), vec![9 | PRE_DEC]);
