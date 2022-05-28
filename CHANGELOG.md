@@ -1,10 +1,14 @@
 ## Pre-alpha
 
+### 0.1.9
+- Update dependencies
+  - Platform to 0.1.25
+- Fix bug with whitespace handling
+
 ### 0.1.8
 - Update dependencies
   - Platform to 0.1.24
 - Add `BMUL`
-
 
 ### 0.1.7
 - Update dependencies

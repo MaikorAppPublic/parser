@@ -67,7 +67,7 @@ pub fn parse_argument(line_num: usize, arg: &str) -> Result<ArgToken, ParseError
 }
 
 fn parse_register(line_num: usize, reg: &str) -> Result<ArgToken, ParseError> {
-    let remaining: String = reg.chars().filter(|c| !c.is_whitespace()).collect();
+    let remaining: String = reg.trim().to_string();
     let (ppid, remaining) = detect_ppid(&remaining);
     let (is_indirect, remaining) = detect_indirect(line_num, reg, remaining)?;
     if let Some((dst, offset)) = remaining.split_once(|c| c == '+') {
@@ -78,8 +78,8 @@ fn parse_register(line_num: usize, reg: &str) -> Result<ArgToken, ParseError> {
                 String::from("Can't use PPID and offset"),
             ));
         }
-        let dst = detect_register(line_num, reg, dst)?;
-        let offset = detect_offset(line_num, reg, offset)?;
+        let dst = detect_register(line_num, reg, dst.trim())?;
+        let offset = detect_offset(line_num, reg, offset.trim())?;
         let meta: u8 = RegisterPPID::new(
             is_indirect,
             offset.reg.is_some(),
@@ -153,7 +153,7 @@ fn detect_indirect<'a>(
 ) -> Result<(bool, &'a str), ParseError> {
     if remaining.starts_with('(') {
         if remaining.ends_with(')') {
-            Ok((true, remaining.trim_matches(|c| c == '(' || c == ')')))
+            Ok((true, remaining.trim_matches(|c| c == '(' || c == ')').trim()))
         } else {
             Err(InvalidRegister(
                 line_num,
@@ -245,13 +245,13 @@ fn detect_num(line_num: usize, original: &str, remaining: &str) -> Result<Option
 
 fn detect_ppid(reg: &str) -> (Option<(PP, ID)>, &str) {
     if reg.starts_with('-') {
-        return (Some((PP::Pre, ID::Dec)), reg.trim_start_matches('-'));
+        return (Some((PP::Pre, ID::Dec)), reg.trim_start_matches('-').trim());
     } else if reg.starts_with('+') {
-        return (Some((PP::Pre, ID::Inc)), reg.trim_start_matches('+'));
+        return (Some((PP::Pre, ID::Inc)), reg.trim_start_matches('+').trim());
     } else if reg.ends_with('-') {
-        return (Some((PP::Post, ID::Dec)), reg.trim_end_matches('-'));
+        return (Some((PP::Post, ID::Dec)), reg.trim_end_matches('-').trim());
     } else if reg.ends_with('+') {
-        return (Some((PP::Post, ID::Inc)), reg.trim_end_matches('+'));
+        return (Some((PP::Post, ID::Inc)), reg.trim_end_matches('+').trim());
     } else {
         (None, reg)
     }
@@ -442,13 +442,13 @@ mod test {
     #[test]
     fn test_ppid_detection() {
         assert_eq!(detect_ppid("-al"), (Some((PP::Pre, ID::Dec)), "al"));
-        assert_eq!(detect_ppid("+ax"), (Some((PP::Pre, ID::Inc)), "ax"));
-        assert_eq!(detect_ppid("bx-"), (Some((PP::Post, ID::Dec)), "bx"));
+        assert_eq!(detect_ppid("+ ax"), (Some((PP::Pre, ID::Inc)), "ax"));
+        assert_eq!(detect_ppid("bx -"), (Some((PP::Post, ID::Dec)), "bx"));
         assert_eq!(detect_ppid("dh+"), (Some((PP::Post, ID::Inc)), "dh"));
         assert_eq!(detect_ppid("-(ax)"), (Some((PP::Pre, ID::Dec)), "(ax)"));
         assert_eq!(detect_ppid("+(bx)"), (Some((PP::Pre, ID::Inc)), "(bx)"));
-        assert_eq!(detect_ppid("(cx)-"), (Some((PP::Post, ID::Dec)), "(cx)"));
-        assert_eq!(detect_ppid("(cx)+"), (Some((PP::Post, ID::Inc)), "(cx)"));
+        assert_eq!(detect_ppid(" ( cx ) -"), (Some((PP::Post, ID::Dec)), "( cx )"));
+        assert_eq!(detect_ppid("(cx) +"), (Some((PP::Post, ID::Inc)), "(cx)"));
 
         assert_eq!(detect_ppid("cx"), (None, "cx"));
         assert_eq!(detect_ppid("(bx)"), (None, "(bx)"));
