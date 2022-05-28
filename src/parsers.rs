@@ -153,7 +153,10 @@ fn detect_indirect<'a>(
 ) -> Result<(bool, &'a str), ParseError> {
     if remaining.starts_with('(') {
         if remaining.ends_with(')') {
-            Ok((true, remaining.trim_matches(|c| c == '(' || c == ')').trim()))
+            Ok((
+                true,
+                remaining.trim_matches(|c| c == '(' || c == ')').trim(),
+            ))
         } else {
             Err(InvalidRegister(
                 line_num,
@@ -447,7 +450,10 @@ mod test {
         assert_eq!(detect_ppid("dh+"), (Some((PP::Post, ID::Inc)), "dh"));
         assert_eq!(detect_ppid("-(ax)"), (Some((PP::Pre, ID::Dec)), "(ax)"));
         assert_eq!(detect_ppid("+(bx)"), (Some((PP::Pre, ID::Inc)), "(bx)"));
-        assert_eq!(detect_ppid(" ( cx ) -"), (Some((PP::Post, ID::Dec)), "( cx )"));
+        assert_eq!(
+            detect_ppid(" ( cx ) -"),
+            (Some((PP::Post, ID::Dec)), "( cx )")
+        );
         assert_eq!(detect_ppid("(cx) +"), (Some((PP::Post, ID::Inc)), "(cx)"));
 
         assert_eq!(detect_ppid("cx"), (None, "cx"));
